@@ -7,6 +7,26 @@ const { WServer } = require("../bin/www");
 
 const io = socketIO(WServer);
 
+exports.getSocketId = uid => {
+  return new Promise((resolve, reject) => {
+    console.log("uid", uid);
+    connection.query(
+      `SELECT socket_id FROM user WHERE uid = ${uid}`,
+      (err, row) => {
+        if (!err && row.length === 0) {
+          resolve(null);
+        } else if (!err && row.length > 0) {
+          resolve({ socketId: row[0].socket_id });
+        } else {
+          console.log(err);
+          reject(err);
+        }
+      }
+    );
+  });
+};
+
+
 function SocketConnection() {
   // This is what the socket.io syntax is like, we will work this later
   io.on("connection", socket => {
@@ -35,9 +55,11 @@ function SocketConnection() {
     })
 
     socket.on("confirm", (obj) => {
-      connection.query(`UPDATE alarm SET ? WHERE uid=${obj.alarmId}`, { confirm: 1 }, (err, rows) => {
+    const query = `UPDATE alarm SET ? WHERE uid=${obj.alarmId}`;
+    //console.log(url);
+      connection.query(query, { confirm: 1 }, (err, rows) => {
         if (!err) {
-          newGetAlarm(socket.id, obj.uid, io);
+          newGetAlarm(socket.id, obj.user_id, io);
         } else {
           //console.log("2번", err);
         }
@@ -45,8 +67,10 @@ function SocketConnection() {
     })
 
     socket.on("allConfirm", (obj) => {
-      connection.query(`UPDATE opendesign.alarm T SET T.confirm = 1 
-        WHERE (user_id=${obj.user_id}) AND NOT((T.type = "MESSAGE") OR (T.type = "DESIGN" AND T.kinds = "INVITE") OR (T.type = "DESIGN" AND T.kinds = "REQUEST") OR (T.type = "GROUP" AND (T.kinds = "JOIN_withDESIGN" || T.kinds = "JOIN_widthGROUP") AND T.type = "MESSAGE"))`, (err, row) => {
+    const url = `UPDATE opendesign.alarm T SET T.confirm = 1 
+        WHERE (user_id=${obj.user_id}) AND NOT((T.type = "MESSAGE") OR (T.type = "DESIGN" AND T.kinds = "INVITE") OR (T.type = "DESIGN" AND T.kinds = "REQUEST") OR (T.type = "GROUP" AND (T.kinds = "JOIN_withDESIGN" || T.kinds = "JOIN_widthGROUP") AND T.type = "MESSAGE"))`
+//console.log("all confirm query - ", url)
+      connection.query(url, (err, row) => {
           if (!err) {
             newGetAlarm(socket.id, obj.user_id, io)
           }
@@ -78,7 +102,7 @@ function SocketConnection() {
 }
 
 
-exports.sendAlarm = (socketId, uid, contentId, message, fromUserId, subContentId = null) => {
+exports.sendAlarm = (socketId, uid, contentId, message, fromUserId, subContentId) => {
   SendAlarm(socketId, uid, contentId, message, fromUserId, io, subContentId);
 };
 

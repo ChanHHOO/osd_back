@@ -26,7 +26,7 @@ const { deleteDesign } = require("./deleteDesign");
 const { getCardComment, createCardComment, deleteCardComment } = require("./designCardCmt");
 const { getTopList } = require("./topList");
 const { updateDesignInfo, updateDesignTime } = require("./updateDesign");
-const { joinDesign, acceptMember, getoutMember, getWaitingMember } = require("../design/joinMember");
+const { joinDesign, acceptMember, getoutMember, getWaitingMember, getWaitingToAcceptMember } = require("../design/joinMember");
 
 router.get("/designList/:page/:sorting?/:cate1?/:cate2?/:keyword?", designList, getDesignList);
 router.get("/designCount/:cate1?/:cate2?", getTotalCount);
@@ -36,7 +36,7 @@ router.get("/designDetail/:id/step", designStep);
 router.get("/designDetail/:id/cardDetail/:card_id", designCardDetail);
 
 router.get("/designDetail/:id/getBoardList", getBoardList);
-router.get("/designDetail/:id/:board_id/getCardList", getCardList, );
+router.get("/designDetail/:id/:board_id/getCardList", getCardList);
 router.get("/designDetail/getCardDetail/:cardId", getCardDetail);
 
 // 디자인에 가입 신청
@@ -47,6 +47,7 @@ router.post("/designDetail/:id/acceptDesign/:member_id", auth, acceptMember);
 router.delete("/designDetail/:id/getoutDesign/:member_id/:refuse", auth, getoutMember);
 // 디자인에 가입 신청중인 멤버 리스트 가져오기
 router.get("/designDetail/:id/waitingList", auth, getWaitingMember);
+router.get("/designDetail/:id/waitingListAccept", auth, getWaitingToAcceptMember);
 
 // 디자인 좋아요 기능 관련
 router.get("/getLike/:id", auth, getLikeDesign);
@@ -59,10 +60,9 @@ router.post("/updateViewCount/:id", updateViewCount);
 
 
 router.post("/createDesign", auth, stringToNumber, stringToBoolean, createDesign);
-router.post("/updateDesignInfo/:id", auth, insertThumbnail, stringToNumber, updateDesignInfo);
-//router.post("/updateDesignTime/:id",auth, updateDesignTime);
-router.post("/updateDesignTime/:id", (req, res) => {
-    connection.query("UPDATE design SET update_time = now() WHERE uid = ?",req.params.id);
+router.post("/updateDesignInfo/:id/:uid", auth, insertThumbnail, stringToNumber, updateDesignInfo);
+router.post("/updateDesignTime/:id", auth, (req, res) => {
+    connection.query("UPDATE design SET update_time = NOW() WHERE uid = ?", req.params.id);
 });
 router.delete("/deleteDesign/:id", auth, deleteDesign);
 router.post("/designDetail/:id/createBoard", auth, stringToNumber, createBoard);
@@ -99,7 +99,7 @@ router.delete("/designDetail/:id/deleteDetailComment/:comment_id", auth, deleteD
 router.post("/changeToProject/:id", auth, changeToProject);
 
 // top 5개 리스트 가져오기 (메인용)
-router.get("/TopList/:page", getTopList, getDesignList);
+router.get("/TopDesignList/:page", getTopList, getDesignList);
 
 // 새로운 디자인 디테일 로직
 router.get("/designDetail/getCardSource/:card_id", getCardSource);
